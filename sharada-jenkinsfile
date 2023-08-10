@@ -1,0 +1,31 @@
+currentBuild.displayName="sharada-#"+currentBuild.number
+pipeline{
+    agent any
+    tools {
+        maven "maven:3.9.0"
+    }
+    stages{
+        stage("git checkout"){
+            steps{
+                git 'https://github.com/kanakatlasharada/my-app'
+            }
+        }
+        stage("maven build"){
+            steps{
+                sh "mvn clean package"
+                sh "mv target/*.war target/myweb.war"
+            }
+        }
+        stage("deploy to tomcat server"){
+            steps{
+                sshagent(['tomcat']) {
+                sh """
+                scp -o StrictHostKeyChecking=no target/myweb.war ec2-user@172.31.44.13:/opt/tomcat9/webapps/
+                ssh ec2-user@172.31.44.13 /opt/tomcat9/bin/shutdown.sh
+                ssh ec2-user@172.31.44.13 /opt/tomcat9/bin/startup.sh
+                """
+                }
+            }
+        }
+    }
+}
